@@ -32,7 +32,7 @@ runs:
       shell: bash
       run: |
         pushd ${{ inputs.crossover-source }}/moltenvk
-        python3 -m pip install --user setuptools
+        python3 -m pip install --user setuptools --break-system-packages
         ./fetchDependencies --macos
         make macos
         popd
