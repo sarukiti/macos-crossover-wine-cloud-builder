@@ -28,6 +28,7 @@ runs:
       shell: bash
       run: |
         pushd ${{ inputs.crossover-source }}/moltenvk
+        python3 -m pip install --user setuptools
         ./fetchDependencies --macos
         make macos
         popd
