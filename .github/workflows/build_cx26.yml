@@ -42,11 +42,51 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build / Install MoltenVK and DXVK
+      - name: Build MoltenVK
         if: steps.cache_moltenVK_DXVK.outputs.cache-hit != 'true'
-        uses: ./.github/actions/build_moltenvk_dxvk
-        with:
-          install-prefix: "${{ env.INSTALLROOT }}/${{ env.MOLTENVK_DXVK_INSTALLATION }}"
+        run: |
+          pushd sources/moltenvk
+          ./fetchDependencies --macos
+          make macos
+          popd
+
+      - name: Install MoltenVK
+        if: steps.cache_moltenVK_DXVK.outputs.cache-hit != 'true'
+        run: |
+          set -x
+          pushd sources/moltenvk/Package/Latest/MoltenVK
+          mkdir -p ${{ env.INSTALLROOT }}/${{ env.MOLTENVK_DXVK_INSTALLATION }}/usr/local/lib/
+          cp ./dylib/macOS/*.dylib ${{ env.INSTALLROOT }}/${{ env.MOLTENVK_DXVK_INSTALLATION }}/usr/local/lib/
+          cp -r ./include ${{ env.INSTALLROOT }}/${{ env.MOLTENVK_DXVK_INSTALLATION }}/usr/local/
+          popd
+          pushd sources/moltenvk/External/glslang/External/spirv-tools/external/spirv-headers/include/
+          cp -r ./spirv ${{ env.INSTALLROOT }}/${{ env.MOLTENVK_DXVK_INSTALLATION }}/usr/local/include/
+          popd
+
+      - name: Install DXVK Dependencies
+        if: steps.cache_moltenVK_DXVK.outputs.cache-hit != 'true'
+        run: |
+          brew update
+          brew install glslang mingw-w64 meson
+
+      - name: Build DXVK
+        if: steps.cache_moltenVK_DXVK.outputs.cache-hit != 'true'
+        run: |
+          set -x
+          pushd sources/dxvk
+          ./package-release.sh master sources/dxvk/install --no-package
+          popd
+
+      - name: Install DXVK
+        if: steps.cache_moltenVK_DXVK.outputs.cache-hit != 'true'
+        run: |
+          set -x
+          pushd sources/dxvk/install/dxvk-macOS-master
+          mkdir -p ${{ env.INSTALLROOT }}/${{ env.MOLTENVK_DXVK_INSTALLATION }}/usr/local/lib64/wine
+          cp -r x64 ${{ env.INSTALLROOT }}/${{ env.MOLTENVK_DXVK_INSTALLATION }}/usr/local/lib64/wine/dxvk
+          mkdir -p ${{ env.INSTALLROOT }}/${{ env.MOLTENVK_DXVK_INSTALLATION }}/usr/local/bin
+          cp setup_dxvk.sh ${{ env.INSTALLROOT }}/${{ env.MOLTENVK_DXVK_INSTALLATION }}/usr/local/bin/
+          popd
 
       - name: Tar MoltenVK / DXVK
         run: |
